@@ -17,9 +17,12 @@ class Input:
         """Update variables - mouse position and click state, and pressed keys"""
         self.mouseUnpressed = False
         self.unpressedKeys = []
+        self.justPressedKeys = []
 
         for event in pygame.event.get():
             if event.type == KEYDOWN:
+                if event.key not in self.pressedKeys:
+                    self.justPressedKeys.append(event.key)
                 self.pressedKeys.append(event.key)
             elif event.type == KEYUP:
                 for key in self.pressedKeys:
