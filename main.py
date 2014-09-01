@@ -25,6 +25,7 @@ def genText(text, topLeftPos, colour, font):
 class StateHandler:
 	def __init__(self):
 		"""Start the program"""
+		pygame.display.set_caption('Juggleball')
 		screen.fill((135, 206, 250))
 		pygame.display.update()
 		pygame.time.wait(400)
@@ -32,54 +33,114 @@ class StateHandler:
 		self.mode = 'menu'
 		self.menu = MenuScreen('Press SPACE to play Juggleball')
 		FPSClock.tick(60)
+		self.highScore = 0
 
 
 	def update(self):
 		self.input.get()
-		screen.fill((135, 206, 250))
+		screen.fill((135, 206, 250)) # sky blue
 
 		if self.mode == 'menu':
 			isDone = self.menu.update(self.input)
 			if isDone:
+				# fade out the menu
+				alpha = 255
+				lastSurf = screen.copy()
+				while alpha > 0:
+					lastSurf.set_alpha(alpha)
+					alpha -= 15
+					self.input.get()
+					screen.fill((135, 206, 250))
+					screen.blit(lastSurf, (0, 0))
+					pygame.display.update()
+					FPSClock.tick(60)
+
 				self.mode = 'game'
 				self.gameHandler = GameHandler(self.input)
 
 		if self.mode == 'game':
 			result = self.gameHandler.update()
-			if result == 'game over':
+			if result != 'still playing':  # game over
+
+				if result > self.highScore:
+					self.highScore = result
+					isNewHighscore = True
+				else:
+					isNewHighscore = False
+
 				self.mode = 'menu'
-				self.menu = MenuScreen('Press SPACE to play again')
+				self.menu = MenuScreen('Press SPACE to play again', self.highScore, result, isNewHighscore)
 		
 		pygame.display.update()
-		pygame.display.set_caption('Juggleball')
 
 
 
 class MenuScreen:
-	font   = pygame.font.Font('fonts/roboto thin.ttf', 30)
-	def __init__(self, text):
-		self.playAgainText, self.playAgainRect = genText(text, (0, 0), ( 60,  60,  60), MenuScreen.font) # light grey
+	instructionFont   = pygame.font.Font('fonts/roboto thin.ttf', 30)
+	numberFont   = pygame.font.Font('fonts/roboto medium.ttf', 30)
+	newHighscoreFont = pygame.font.Font('fonts/roboto medium.ttf', 25)
+
+	keyboardImg = pygame.image.load('highlighted keys.png')
+	def __init__(self, text, highScore='do not display', score='do not display', isNewHighscore=False):
+		self.playAgainText, self.playAgainRect = genText(text, (0, 0), ( 60,  60,  60), MenuScreen.instructionFont) # light grey
 		self.playAgainAlpha = 0
 		self.playAgainRect.midbottom = (WINDOWWIDTH / 2, WINDOWHEIGHT)
-		self.playAgainTargetY = WINDOWHEIGHT / 2
+		self.playAgainTargetY = WINDOWHEIGHT / 2 + 20
+		
+		if highScore != 'do not display':
+			self.highScoreText, self.highScoreRect = genText('HIGH SCORE: ' + str(highScore), (0, 0), (255, 255, 102), MenuScreen.numberFont)
+			self.highScoreRect.bottomleft = (WINDOWWIDTH / 2 + 20, 0)                                 # ^ yellow
+		if score != 'do not display':
+			self.scoreText, self.scoreRect = genText('LAST SCORE: ' + str(score), (0, 0), (255, 255, 102), MenuScreen.numberFont) # yellow
+			self.scoreRect.bottomright = (WINDOWWIDTH / 2 - 20, 0)
+			self.scoreRectsTargetY = WINDOWHEIGHT / 2 - 20
+
+		if isNewHighscore:
+			tempNewTextSurf, self.newTextRect = genText('NEW!', (0, 0), (250, 105, 97), MenuScreen.newHighscoreFont) # red
+			tempNewTextSurf.convert_alpha()
+			tempNewTextSurf = pygame.transform.rotate(tempNewTextSurf, -25)
+			self.newTextSurf = pygame.Surface(tempNewTextSurf.get_size())
+			self.newTextSurf.set_colorkey((0, 0, 0))
+			self.newTextSurf.fill((135, 206, 250))
+			self.newTextSurf.blit(tempNewTextSurf, (0,0))
+		self.isNewHighscore = isNewHighscore
+
+		self.keyboardImg = MenuScreen.keyboardImg.copy().convert_alpha()
+		self.keyboardRect = MenuScreen.keyboardImg.get_rect()
+		self.keyboardRect.midbottom = (WINDOWWIDTH / 2, WINDOWHEIGHT / 2 - 20)
 
 
 	def update(self, userInput):
 		dt = FPSClock.tick(60) / 100.0
 
-		if self.playAgainRect.centery > self.playAgainTargetY:
-			self.playAgainRect.centery -= (self.playAgainRect.centery - self.playAgainTargetY) * 0.35 * dt
+		if self.playAgainRect.y > self.playAgainTargetY:
+			self.playAgainRect.y -= (self.playAgainRect.y - self.playAgainTargetY) * 0.35 * dt
 
 		self.playAgainText.set_alpha(self.playAgainAlpha)
 		self.playAgainAlpha += 0.0005 * dt
 		if self.playAgainAlpha > 255: self.playAgainAlpha = 255
 
+		try:
+			if self.scoreRect.bottom < self.scoreRectsTargetY - 20:
+				self.scoreRect.bottom += (self.scoreRectsTargetY - self.scoreRect.bottom) * 0.35 * dt
+				self.highScoreRect.y = self.scoreRect.y
+				if self.isNewHighscore:
+					self.newTextRect.bottomleft = (self.highScoreRect.right - 30, self.highScoreRect.top - 4)
+
+			screen.blit(self.scoreText, self.scoreRect)
+			screen.blit(self.highScoreText, self.highScoreRect)
+
+			if self.isNewHighscore:
+				screen.blit(self.newTextSurf, self.newTextRect)
+
+		except AttributeError:
+			# no score/highscore needs to be displayed
+			screen.blit(self.keyboardImg, (self.keyboardRect))
+
 		screen.blit(self.playAgainText, self.playAgainRect)
 
 		if K_SPACE in userInput.unpressedKeys:
 			return 'done'
-
-
 
 
 
@@ -89,32 +150,39 @@ class GameHandler:
 		self.game = GameData()
 		self.game.input = userInput
 
+		self.scoreDisplay = ui.ScoreDisplay(self.game)
+
 		self.addNewBird(self.game)
 		for bird in self.game.birdGroup:
 			bird.add(self.game.activeBirds)
 
 
 	def update(self):
+		self.game.dt =  FPSClock.tick(self.game.FPS) / 1000.0
 		self.game.birdGroup.update(self.game)
 
 		if len(self.game.activeBirds) > 0:
 			if time.time() - self.game.lastNewBirdTime > self.game.BIRDSPAWNINTERVAL:
 				self.addNewBird(self.game)
-			# 
+			# DRAW A GREY BAR SHOWING TIME UNTIL NEXT BIRD SPAWN
 			pygame.draw.rect(screen, self.game.LIGHTGREY, ((0, WINDOWHEIGHT - 30), 
 							 (((float(time.time()) - self.game.lastNewBirdTime + 0.01) / self.game.BIRDSPAWNINTERVAL) * WINDOWWIDTH, 30)))
+		else:
+			self.game.gameOver = True
 
-		self.game.dt =  FPSClock.tick(self.game.FPS) / 1000.0
+		self.scoreDisplay.update(self.game, screen)
 		
 		if len(self.game.birdGroup) == 0: # all balls are dead and have disappeared
 			pygame.time.wait(200)
-			return 'game over'
+			return self.game.score
+		return 'still playing'
 
 
 	def addNewBird(self, game):
 		if len(game.inactiveKeys) == 0:
 			return  # all keys have active balls
-		Bird(random.choice(self.game.inactiveKeys), random.choice(self.game.pastelColours.values()), random.randint(50, 150),
+		key = random.choice(self.game.inactiveKeys)
+		Bird(key, self.game.pastelColoursList[self.game.POSSIBLEKEYCODES.index(key)], random.randint(50, 150),
 							 game, (random.randint(300, WINDOWWIDTH - 300), random.randint(400, 500)))
 		game.lastNewBirdTime = time.time()
 
@@ -127,6 +195,8 @@ class GameData:
 
 		self.birdGroup = pygame.sprite.Group()
 		self.activeBirds = pygame.sprite.Group()
+		self.score = 0
+		self.gameOver = False
 
 		# CONSTANTS
 		self.FPS = 60
@@ -136,9 +206,10 @@ class GameData:
 		self.BIRDFONT = pygame.font.Font('fonts/roboto medium.ttf', 25)
 		self.WINDOWRECT = pygame.Rect((0, 0), (WINDOWWIDTH, WINDOWHEIGHT))
 		
-		self.POSSIBLEKEYCODES = [K_h, K_j, K_k] #[K_a, K_s, K_d, K_f, K_h, K_j, K_k, K_l] # home keys
-		self.inactiveKeys = self.POSSIBLEKEYCODES
-		self.BIRDSPAWNINTERVAL = 5
+		self.POSSIBLEKEYCODES = [K_a, K_s, K_d, K_f, K_h, K_j, K_k, K_l] # home keys
+		self.inactiveKeys = self.POSSIBLEKEYCODES[:]
+		self.BIRDSPAWNINTERVAL = 10
+		self.INCREMENTSCOREINTERVAL = 1
 
 	# COLOURS        ( R ,  G ,  B )
 		self.WHITE     = (255, 255, 255)
@@ -159,13 +230,16 @@ class GameData:
 							  'pink':   (255, 209, 220),
 							  'brown':  (130, 105,  83),
 							  'grey':   (207, 207, 196),
-							  'green':  (119, 221, 119)}
+							  'green':  (119, 221, 119),
+							  'blue':   (174, 198, 207)}
+		self.pastelColoursList = self.pastelColours.values()
+
 
 
 class Bird(pygame.sprite.Sprite):
 	"""Player controlled bird, dies on collision with pipes"""
 	jumpVelocity = 8
-	timeTillCompulsaryJump = 5  # gravity does not act upon the bird until it jumps or this amount of time is elapsed
+	timeTillCompulsaryJump = 4  # gravity does not act upon the bird until it jumps or this amount of time is elapsed
 
 	def __init__(self, key, colour, size, game, centerPos):
 		pygame.sprite.Sprite.__init__(self)
@@ -181,6 +255,7 @@ class Bird(pygame.sprite.Sprite):
 		self.hasJumped = False
 		self.alpha = 1.0
 		self.birthTime = time.time()
+		self.lastIncrementScoreTime = self.birthTime
 
 
 	def update(self, game):
@@ -192,7 +267,7 @@ class Bird(pygame.sprite.Sprite):
 				self.surf = self.circleSurf.copy()
 				self.maxAlpha = 255
 
-		if not self.hasJumped and time.time() - self.birthTime > Bird.timeTillCompulsaryJump:
+		if (not self.hasJumped and time.time() - self.birthTime > Bird.timeTillCompulsaryJump) or (game.gameOver and not self.isDead):
 			self.hasJumped = True  # start falling
 			self.surf = self.circleSurf.copy()
 
@@ -200,8 +275,8 @@ class Bird(pygame.sprite.Sprite):
 			self.updateYPosition(game)
 			self.surf.set_alpha(255)
 		else:
-			self.maxAlpha = 50
-			if time.time() - self.birthTime > Bird.timeTillCompulsaryJump - 1:
+			self.maxAlpha = 80
+			if time.time() - self.birthTime > Bird.timeTillCompulsaryJump - 1.3:
 				self.surf.blit(self.redCircle, (0, 0))
 
 		if not self.isDead:
@@ -232,6 +307,10 @@ class Bird(pygame.sprite.Sprite):
 		if not self.hasJumped and self.alpha < self.maxAlpha:
 			self.alpha += 1
 			self.surf.set_alpha(self.alpha)
+
+		if time.time() - self.lastIncrementScoreTime > game.INCREMENTSCOREINTERVAL and self.hasJumped and not self.isDead:
+			game.score += 1
+
 		screen.blit(self.surf, self.rect)
 
 
@@ -246,7 +325,7 @@ class Bird(pygame.sprite.Sprite):
 
 	def genSurf(self, game, centerPos):
 		"""Generates a surface and rect object for the bird"""
-		self.circleSurf = pygame.Surface((self.size, self.size))
+		self.circleSurf = pygame.Surface((self.size, self.size)).convert()
 		self.circleSurf.set_colorkey(game.BLACK)
 
 		self.rect = self.circleSurf.get_rect()
@@ -260,18 +339,17 @@ class Bird(pygame.sprite.Sprite):
 		keyTextRect.center = (halfRectWidth, halfRectWidth)
 		self.circleSurf.blit(keyTextSurf, keyTextRect)
 
-		self.fadedCircle = pygame.Surface((self.size, self.size))
+		self.fadedCircle = pygame.Surface((self.size, self.size)).convert()
 		self.fadedCircle.set_colorkey(game.BLACK)
 		pygame.draw.circle(self.fadedCircle, game.WHITE, (self.size / 2, self.size / 2), self.size / 2)
 		self.fadedCircle.set_alpha(100)
 	
-		self.redCircle = pygame.Surface((self.size, self.size))
+		self.redCircle = pygame.Surface((self.size, self.size)).convert()
 		self.redCircle.set_colorkey(game.BLACK)
 		pygame.draw.circle(self.redCircle, game.pastelColours['red'], (self.size / 2, self.size / 2), self.size / 2)
-		self.redCircle.set_alpha(20)
+		self.redCircle.set_alpha(15)
 		
 		self.surf = self.circleSurf.copy()
-
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ pygame.init()
 
 BASICFONT = pygame.font.Font('fonts/roboto medium.ttf', 14)
 MEDIUMFONT =pygame.font.Font('fonts/roboto regular.ttf', 16)
-BIGFONT   = pygame.font.Font('fonts/roboto regular.ttf', 20)
+BIGFONT   = pygame.font.Font('fonts/roboto regular.ttf', 25)
 
 def genText(text, topLeftPos, colour, font):
 	surf = font.render(text, 1, colour)
@@ -69,3 +69,19 @@ class Button:
 		if userInput.mouseUnpressed == True and self.rect.collidepoint(userInput.mousePos):
 			self.isClicked = True
 			#sound.play('click', 0.8, False)
+
+class ScoreDisplay:
+	def __init__(self, game):
+		self.labelSurf, self.labelRect = genText('SCORE: ', (0, 0), game.YELLOW, BIGFONT)
+		self.labelRect.topright = (game.WINDOWRECT.width - 50, 10)
+		self.labelSurf.convert_alpha()
+		self.lastScore = -1 # always generate score surf on first update
+
+
+	def update(self, game, screen):
+		if game.score != self.lastScore:
+			self.scoreSurf, self.scoreRect = genText(str(game.score), (0, 0), game.YELLOW, BIGFONT)
+			self.scoreRect.topleft = self.labelRect.topright
+		screen.blit(self.labelSurf, self.labelRect)
+		screen.blit(self.scoreSurf, self.scoreRect)
+		self.lastScore = game.score
