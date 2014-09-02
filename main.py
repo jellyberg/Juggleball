@@ -193,7 +193,7 @@ class GameHandler:
 		isFinished = self.game.tutorialText.sprites()[0].update(self.game, screen)
 		if isFinished:
 			self.tutorialProgress += 1
-			if self.tutorialProgress < len(self.game.TUTORIALTEXTCONTENT) - 1:
+			if self.tutorialProgress < len(self.game.TUTORIALTEXTCONTENT):
 				ui.TutorialText(self.game.TUTORIALTEXTCONTENT[self.tutorialProgress], self.game)
 
 
@@ -228,9 +228,10 @@ class GameData:
 		self.BIRDSPAWNINTERVAL = 7
 		self.INCREMENTSCOREINTERVAL = 1
 
-		self.TUTORIALTEXTCONTENT = ['Keep the ball on the screen',
-									'If you have no balls on the screen, you lose',
-									'The more balls you are juggling the faster your score increases']
+		self.TUTORIALTEXTCONTENT = ['Keep the all of the balls on the screen',
+									'If you drop all balls, you lose',
+									'The more balls you are juggling the faster your score increases',
+									'Good luck!']
 
 	# COLOURS        ( R ,  G ,  B )
 		self.WHITE     = (255, 255, 255)
@@ -260,7 +261,7 @@ class GameData:
 class Bird(pygame.sprite.Sprite):
 	"""Player controlled bird, dies on collision with pipes"""
 	jumpVelocity = 8
-	timeTillCompulsaryJump = 4  # gravity does not act upon the bird until it jumps or this amount of time is elapsed
+	timeTillCompulsaryJump = 7  # gravity does not act upon the bird until it jumps or this amount of time is elapsed
 
 	def __init__(self, key, colour, size, game, centerPos, isFirstBird):
 		pygame.sprite.Sprite.__init__(self)
@@ -279,7 +280,7 @@ class Bird(pygame.sprite.Sprite):
 		self.lastIncrementScoreTime = self.birthTime
 
 		if self.isFirstBird:
-			ui.TutorialText('Press %s to jump' %(pygame.key.name(self.key).upper()), game)
+			ui.TutorialText('Press the ball\'s letter on your keyboard to jump', game)
 
 
 	def update(self, game):
