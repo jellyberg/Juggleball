@@ -1,13 +1,15 @@
-import pygame
+import pygame, time
 
 pygame.init()
 
-BASICFONT = pygame.font.Font('fonts/roboto medium.ttf', 14)
-MEDIUMFONT =pygame.font.Font('fonts/roboto regular.ttf', 16)
-BIGFONT   = pygame.font.Font('fonts/roboto regular.ttf', 25)
+BASICFONT       = pygame.font.Font('fonts/roboto medium.ttf', 14)
+MEDIUMFONT      = pygame.font.Font('fonts/roboto regular.ttf', 16)
+BIGFONT         = pygame.font.Font('fonts/roboto regular.ttf', 25)
+INSTRUCTIONFONT = pygame.font.Font('fonts/roboto thin.ttf', 30)
 
 def genText(text, topLeftPos, colour, font):
 	surf = font.render(text, 1, colour)
+	surf.set_colorkey((0,0,0))
 	rect = surf.get_rect()
 	rect.topleft = topLeftPos
 	return (surf, rect)
@@ -70,10 +72,12 @@ class Button:
 			self.isClicked = True
 			#sound.play('click', 0.8, False)
 
+
+
 class ScoreDisplay:
 	def __init__(self, game):
 		self.labelSurf, self.labelRect = genText('SCORE: ', (0, 0), game.YELLOW, BIGFONT)
-		self.labelRect.topright = (game.WINDOWRECT.width - 50, 10)
+		self.labelRect.topright = (game.WINDOWRECT.width - 100, 10)
 		self.labelSurf.convert_alpha()
 		self.lastScore = -1 # always generate score surf on first update
 
@@ -85,3 +89,22 @@ class ScoreDisplay:
 		screen.blit(self.labelSurf, self.labelRect)
 		screen.blit(self.scoreSurf, self.scoreRect)
 		self.lastScore = game.score
+
+
+
+class TutorialText(pygame.sprite.Sprite):
+	lifetime = 5
+	def __init__(self, text, game):
+		pygame.sprite.Sprite.__init__(self)
+		self.add(game.tutorialText)
+		self.surf, self.rect = genText(text, (0, 0), game.BLACK, INSTRUCTIONFONT)
+		self.rect.midtop = (game.WINDOWRECT.width / 2, game.WINDOWRECT.height - 150)
+		self.text = text
+		self.birthTime = time.time()
+
+
+	def update(self, game, screen):
+		if time.time() - self.birthTime > TutorialText.lifetime:
+			self.kill()
+			return True
+		screen.blit(self.surf, self.rect)

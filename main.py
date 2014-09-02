@@ -152,9 +152,10 @@ class GameHandler:
 
 		self.scoreDisplay = ui.ScoreDisplay(self.game)
 
-		self.addNewBird(self.game)
+		self.addNewBird(self.game, True)
 		for bird in self.game.birdGroup:
 			bird.add(self.game.activeBirds)
+		self.tutorialProgress = -1
 
 
 	def update(self):
@@ -164,13 +165,12 @@ class GameHandler:
 		if len(self.game.activeBirds) > 0:
 			if time.time() - self.game.lastNewBirdTime > self.game.BIRDSPAWNINTERVAL:
 				self.addNewBird(self.game)
-			# DRAW A GREY BAR SHOWING TIME UNTIL NEXT BIRD SPAWN
-			pygame.draw.rect(screen, self.game.LIGHTGREY, ((0, WINDOWHEIGHT - 30), 
-							 (((float(time.time()) - self.game.lastNewBirdTime + 0.01) / self.game.BIRDSPAWNINTERVAL) * WINDOWWIDTH, 30)))
+			self.drawTimeTillNextBirdBar()
 		else:
 			self.game.gameOver = True
 
 		self.scoreDisplay.update(self.game, screen)
+		self.updateTutorial()
 		
 		if len(self.game.birdGroup) == 0: # all balls are dead and have disappeared
 			pygame.time.wait(200)
@@ -178,13 +178,29 @@ class GameHandler:
 		return 'still playing'
 
 
-	def addNewBird(self, game):
+	def addNewBird(self, game, isFirstBird=False):
 		if len(game.inactiveKeys) == 0:
 			return  # all keys have active balls
 		key = random.choice(self.game.inactiveKeys)
 		Bird(key, self.game.pastelColoursList[self.game.POSSIBLEKEYCODES.index(key)], random.randint(50, 150),
-							 game, (random.randint(300, WINDOWWIDTH - 300), random.randint(400, 500)))
+							 game, (random.randint(300, WINDOWWIDTH - 300), random.randint(400, 500)), isFirstBird)
 		game.lastNewBirdTime = time.time()
+
+
+	def updateTutorial(self):
+		if not self.game.tutorialText:
+			return # tutorial is complete
+		isFinished = self.game.tutorialText.sprites()[0].update(self.game, screen)
+		if isFinished:
+			self.tutorialProgress += 1
+			if self.tutorialProgress < len(self.game.TUTORIALTEXTCONTENT) - 1:
+				ui.TutorialText(self.game.TUTORIALTEXTCONTENT[self.tutorialProgress], self.game)
+
+
+	def drawTimeTillNextBirdBar(self):
+		"""A grey bar thats extends across the bottom of the screen"""
+		pygame.draw.rect(screen, self.game.LIGHTGREY, ((0, WINDOWHEIGHT - 30), 
+						(((float(time.time()) - self.game.lastNewBirdTime + 0.01) / self.game.BIRDSPAWNINTERVAL) * WINDOWWIDTH, 30)))
 
 
 
@@ -197,6 +213,7 @@ class GameData:
 		self.activeBirds = pygame.sprite.Group()
 		self.score = 0
 		self.gameOver = False
+		self.tutorialText = pygame.sprite.GroupSingle()
 
 		# CONSTANTS
 		self.FPS = 60
@@ -208,8 +225,12 @@ class GameData:
 		
 		self.POSSIBLEKEYCODES = [K_a, K_s, K_d, K_f, K_h, K_j, K_k, K_l] # home keys
 		self.inactiveKeys = self.POSSIBLEKEYCODES[:]
-		self.BIRDSPAWNINTERVAL = 10
+		self.BIRDSPAWNINTERVAL = 7
 		self.INCREMENTSCOREINTERVAL = 1
+
+		self.TUTORIALTEXTCONTENT = ['Keep the ball on the screen',
+									'If you have no balls on the screen, you lose',
+									'The more balls you are juggling the faster your score increases']
 
 	# COLOURS        ( R ,  G ,  B )
 		self.WHITE     = (255, 255, 255)
@@ -241,10 +262,10 @@ class Bird(pygame.sprite.Sprite):
 	jumpVelocity = 8
 	timeTillCompulsaryJump = 4  # gravity does not act upon the bird until it jumps or this amount of time is elapsed
 
-	def __init__(self, key, colour, size, game, centerPos):
+	def __init__(self, key, colour, size, game, centerPos, isFirstBird):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(game.birdGroup)
-		self.key, self.colour, self.size = key, colour, size
+		self.key, self.colour, self.size, self.isFirstBird = key, colour, size, isFirstBird
 		game.inactiveKeys.remove(self.key) # only one ball with each key
 		self.genSurf(game, centerPos)
 
@@ -257,9 +278,12 @@ class Bird(pygame.sprite.Sprite):
 		self.birthTime = time.time()
 		self.lastIncrementScoreTime = self.birthTime
 
+		if self.isFirstBird:
+			ui.TutorialText('Press %s to jump' %(pygame.key.name(self.key).upper()), game)
+
 
 	def update(self, game):
-		if self.key in game.input.justPressedKeys and not self.isDead:
+		if self.key in game.input.justPressedKeys and not self.isDead and not game.gameOver:
 			self.jump()
 			if not self.hasJumped:
 				self.hasJumped = True
@@ -350,6 +374,8 @@ class Bird(pygame.sprite.Sprite):
 		self.redCircle.set_alpha(15)
 		
 		self.surf = self.circleSurf.copy()
+
+
 
 
 if __name__ == '__main__':
