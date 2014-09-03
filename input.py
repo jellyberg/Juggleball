@@ -1,4 +1,4 @@
-# Flappy Flock
+# Juggleball
 # a game by Adam Binks
 
 import pygame, sys
@@ -37,6 +37,8 @@ class Input:
             elif event.type == MOUSEBUTTONUP:
                 self.mousePressed = False
                 self.mouseUnpressed = event.button
+            elif event.type == QUIT:
+                pygame.event.post(event)
         
         self.checkForQuit()
 

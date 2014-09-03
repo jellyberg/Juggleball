@@ -1,7 +1,7 @@
 # Juggleball
 # a game by Adam Binks
 
-import pygame, input, random, time, ui
+import pygame, input, random, time, ui, sound
 
 from pygame.locals import *
 
@@ -25,6 +25,7 @@ def genText(text, topLeftPos, colour, font):
 class StateHandler:
 	def __init__(self):
 		"""Start the program"""
+		#sound.startMusic()
 		pygame.display.set_caption('Juggleball')
 		screen.fill((135, 206, 250))
 		pygame.display.update()
@@ -34,6 +35,8 @@ class StateHandler:
 		self.menu = MenuScreen('Press SPACE to play Juggleball')
 		FPSClock.tick(60)
 		self.highScore = 0
+		self.isFirstGame = True
+		sound.play('whoosh')
 
 
 	def update(self):
@@ -46,6 +49,7 @@ class StateHandler:
 				# fade out the menu
 				alpha = 255
 				lastSurf = screen.copy()
+				sound.play('whoosh')
 				while alpha > 0:
 					lastSurf.set_alpha(alpha)
 					alpha -= 15
@@ -56,7 +60,8 @@ class StateHandler:
 					FPSClock.tick(60)
 
 				self.mode = 'game'
-				self.gameHandler = GameHandler(self.input)
+				self.gameHandler = GameHandler(self.input, self.isFirstGame)
+				self.isFirstBird = False
 
 		if self.mode == 'game':
 			result = self.gameHandler.update()
@@ -145,12 +150,14 @@ class MenuScreen:
 
 
 class GameHandler:
-	def __init__(self, userInput):
+	def __init__(self, userInput, showTutorial=False):
 		"""Start the program"""
 		self.game = GameData()
 		self.game.input = userInput
+		self.showTutorial = showTutorial
 
 		self.scoreDisplay = ui.ScoreDisplay(self.game)
+		self.timer = ui.Timer()
 
 		self.addNewBird(self.game, True)
 		for bird in self.game.birdGroup:
@@ -170,7 +177,10 @@ class GameHandler:
 			self.game.gameOver = True
 
 		self.scoreDisplay.update(self.game, screen)
-		self.updateTutorial()
+		if self.showTutorial:
+			self.updateTutorial()
+
+		self.timer.update(self.game, screen)
 		
 		if len(self.game.birdGroup) == 0: # all balls are dead and have disappeared
 			pygame.time.wait(200)
@@ -228,9 +238,10 @@ class GameData:
 		self.BIRDSPAWNINTERVAL = 7
 		self.INCREMENTSCOREINTERVAL = 1
 
-		self.TUTORIALTEXTCONTENT = ['Keep the all of the balls on the screen',
-									'If you drop all balls, you lose',
+		self.TUTORIALTEXTCONTENT = ['Keep all the balls on the screen',
+									'If you drop all the balls, you lose',
 									'The more balls you are juggling the faster your score increases',
+									'Larger balls are heavier',
 									'Good luck!']
 
 	# COLOURS        ( R ,  G ,  B )
@@ -279,6 +290,8 @@ class Bird(pygame.sprite.Sprite):
 		self.birthTime = time.time()
 		self.lastIncrementScoreTime = self.birthTime
 
+		sound.play('pop')
+
 		if self.isFirstBird:
 			ui.TutorialText('Press the ball\'s letter on your keyboard to jump', game)
 
@@ -314,6 +327,7 @@ class Bird(pygame.sprite.Sprite):
 				self.xVelocity = random.randint(-700, 700)
 				self.isDead = True
 				self.surf.blit(self.fadedCircle, (0,0))
+				sound.play('shatter')
 
 		if self.isDead:
 			if self.key not in game.inactiveKeys:

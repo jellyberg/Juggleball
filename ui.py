@@ -1,3 +1,6 @@
+# Juggleball
+# a game by Adam Binks
+
 import pygame, time
 
 pygame.init()
@@ -108,3 +111,17 @@ class TutorialText(pygame.sprite.Sprite):
 			self.kill()
 			return True
 		screen.blit(self.surf, self.rect)
+
+
+class Timer:
+	gametime = 60 # seconds
+	def __init__(self):
+		self.startTime = time.time()
+
+
+	def update(self, game, screen):
+		surf, rect = genText(str(int(Timer.gametime - (time.time() - self.startTime))), (0,0), game.YELLOW, BIGFONT)
+		rect.midtop = (game.WINDOWRECT.width / 2, 10)
+		screen.blit(surf, rect)
+		if (time.time() - self.startTime) > Timer.gametime:
+			game.gameOver = True
