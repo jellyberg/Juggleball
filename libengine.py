@@ -5,12 +5,18 @@ import pygame, input, random, time, ui, sound
 
 from pygame.locals import *
 
-pygame.mixer.pre_init(44100,-16,2, 1024)
+pygame.mixer.pre_init(44100,-16,2, 100)
 pygame.init()
 
 WINDOWWIDTH, WINDOWHEIGHT = (1200, 800)
 screen = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 FPSClock = pygame.time.Clock()
+
+
+def run():
+	stateHandler = StateHandler()
+	while True:
+		stateHandler.update()
 
 
 def genText(text, topLeftPos, colour, font):
@@ -85,7 +91,7 @@ class MenuScreen:
 	numberFont   = pygame.font.Font('fonts/roboto medium.ttf', 30)
 	newHighscoreFont = pygame.font.Font('fonts/roboto medium.ttf', 25)
 
-	keyboardImg = pygame.image.load('highlighted keys.png')
+	keyboardImg = pygame.image.load('assets/highlighted keys.png')
 	def __init__(self, text, highScore='do not display', score='do not display', isNewHighscore=False):
 		self.playAgainText, self.playAgainRect = genText(text, (0, 0), ( 60,  60,  60), MenuScreen.instructionFont) # light grey
 		self.playAgainAlpha = 0
@@ -93,6 +99,7 @@ class MenuScreen:
 		self.playAgainTargetY = WINDOWHEIGHT / 2 + 20
 		
 		if highScore != 'do not display':
+			sound.play('booshWhaWhaWhaWha')
 			self.highScoreText, self.highScoreRect = genText('HIGH SCORE: ' + str(highScore), (0, 0), (255, 255, 102), MenuScreen.numberFont)
 			self.highScoreRect.bottomleft = (WINDOWWIDTH / 2 + 20, 0)                                 # ^ yellow
 		if score != 'do not display':
@@ -242,6 +249,7 @@ class GameData:
 									'If you drop all the balls, you lose',
 									'The more balls you are juggling the faster your score increases',
 									'Larger balls are heavier',
+									'Try and get the best score you can in 60 seconds!'
 									'Good luck!']
 
 	# COLOURS        ( R ,  G ,  B )
@@ -355,6 +363,7 @@ class Bird(pygame.sprite.Sprite):
 
 	def jump(self):
 		self.velocity = Bird.jumpVelocity
+		sound.play('jingle')
 
 
 	def updateYPosition(self, game):
@@ -394,6 +403,4 @@ class Bird(pygame.sprite.Sprite):
 
 
 if __name__ == '__main__':
-	stateHandler = StateHandler()
-	while True:
-		stateHandler.update()
+	run()

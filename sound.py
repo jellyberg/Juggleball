@@ -1,8 +1,8 @@
 import pygame, random
 
 SOUND = {}
-for filename in ['pop', 'shatter', 'whoosh']: # .wav files only
-	SOUND[filename] = pygame.mixer.Sound('sounds/%s.wav' %(filename))
+for filename in ['pop', 'shatter', 'whoosh', 'booshWhaWhaWhaWha', 'jingle']: # .wav files only
+	SOUND[filename] = pygame.mixer.Sound('assets/sounds/%s.wav' %(filename))
 
 def play(sound, volume=0.8, varyVolume=True ,loops=0):
 	"""Plays the given sound"""
@@ -14,5 +14,6 @@ def play(sound, volume=0.8, varyVolume=True ,loops=0):
 
 
 def startMusic():
+	# OBSOLETE ATM
 	pygame.mixer.music.load('sounds/INSERT MUSIC FILE NAME HERE.mp3')
 	pygame.mixer.music.play(-1)

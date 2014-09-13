@@ -8,6 +8,7 @@ pygame.init()
 BASICFONT       = pygame.font.Font('fonts/roboto medium.ttf', 14)
 MEDIUMFONT      = pygame.font.Font('fonts/roboto regular.ttf', 16)
 BIGFONT         = pygame.font.Font('fonts/roboto regular.ttf', 25)
+EXTRABIGFONT    = pygame.font.Font('fonts/roboto regular.ttf', 35)
 INSTRUCTIONFONT = pygame.font.Font('fonts/roboto thin.ttf', 30)
 
 def genText(text, topLeftPos, colour, font):
@@ -120,8 +121,20 @@ class Timer:
 
 
 	def update(self, game, screen):
-		surf, rect = genText(str(int(Timer.gametime - (time.time() - self.startTime))), (0,0), game.YELLOW, BIGFONT)
+		if game.gameOver:
+			return
+
+		remainingTime = int(Timer.gametime - (time.time() - self.startTime))
+
+		if remainingTime < 10:
+			textColour = game.pastelColours['red']
+			font = EXTRABIGFONT
+		else:
+			textColour = game.YELLOW
+			font = BIGFONT
+
+		surf, rect = genText(str(remainingTime), (0,0), textColour, font)
 		rect.midtop = (game.WINDOWRECT.width / 2, 10)
 		screen.blit(surf, rect)
-		if (time.time() - self.startTime) > Timer.gametime:
+		if remainingTime < 1:
 			game.gameOver = True
