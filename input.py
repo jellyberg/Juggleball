@@ -1,19 +1,20 @@
 # Juggleball
 # a game by Adam Binks
 
-import pygame, sys
+import pygame, sys, outro
 from pygame.locals import *
 
 class Input:
     """A class to handle input accessible by all other classes"""
     def __init__(self):
         self.pressedKeys = []
+        self.unpressedKeys = []
         self.mousePressed = False
         self.mouseUnpressed = False
         self.mousePos = (0, 0)
         
 
-    def get(self):
+    def get(self, winSize, screen, FPSClock, showingOutro=False):
         """Update variables - mouse position and click state, and pressed keys"""
         self.mouseUnpressed = False
         self.unpressedKeys = []
@@ -40,15 +41,20 @@ class Input:
             elif event.type == QUIT:
                 pygame.event.post(event)
         
-        self.checkForQuit()
+        if not showingOutro:
+            self.checkForQuit(winSize, screen, FPSClock)
 
 
-    def checkForQuit(self):
+    def checkForQuit(self, winSize, screen, FPSClock):
         """Terminate if QUIT events"""
         for event in pygame.event.get(QUIT): # get all the QUIT events
-            self.terminate() # terminate if any QUIT events are present
+            outro.showOutro(winSize, screen, FPSClock, self) # terminate if any QUIT events are present
         if K_ESCAPE in self.unpressedKeys:
-            self.terminate()
+            outro.showOutro(winSize, screen, FPSClock, self)
+
+
+    def showOutro(self, winSize, screen, FPSClock):
+        outro.showOutro(winSize, screen, FPSClock)
 
 
     def terminate(self):

@@ -1,12 +1,13 @@
 # Juggleball
 # a game by Adam Binks
 
-import pygame, input, random, time, ui, sound
-
+import pygame
 from pygame.locals import *
 
 pygame.mixer.pre_init(44100,-16,2, 100)
 pygame.init()
+
+import input, random, time, ui, sound
 
 WINDOWWIDTH, WINDOWHEIGHT = (1200, 800)
 screen = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
@@ -46,8 +47,8 @@ class StateHandler:
 
 
 	def update(self):
-		self.input.get()
 		screen.fill((135, 206, 250)) # sky blue
+		self.input.get((WINDOWWIDTH, WINDOWHEIGHT), screen, FPSClock)
 
 		if self.mode == 'menu':
 			isDone = self.menu.update(self.input)
@@ -59,7 +60,6 @@ class StateHandler:
 				while alpha > 0:
 					lastSurf.set_alpha(alpha)
 					alpha -= 15
-					self.input.get()
 					screen.fill((135, 206, 250))
 					screen.blit(lastSurf, (0, 0))
 					pygame.display.update()
